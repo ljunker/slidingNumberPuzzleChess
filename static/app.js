@@ -54,11 +54,36 @@ function renderBoard(fen, inaccessible) {
     renderInaccessibleArrows(board, inaccessible);
 }
 
-function squareClicked(event) {
+async function squareClicked(event) {
     const square = event.currentTarget;
     const squareName = square.dataset.square;
 
-    alert("You clicked on square: " + squareName);
+    if (!square.dataset.piece) {
+        clearMoveHighlights();
+        return;
+    }
+
+    try {
+        const response = await fetch("/pieceMoves", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                square: squareName,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Piece move lookup failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        showPieceMoves(data.square, data.moves);
+    } catch (error) {
+        console.error("Error loading piece moves:", error);
+        clearMoveHighlights();
+    }
 }
 
 async function arrowClicked(event) {
@@ -104,9 +129,49 @@ function createSquare(rank, file, squareName, piece, inaccessibleSquares) {
     }
 
     square.dataset.square = squareName;
+
+    if (piece) {
+        square.dataset.piece = piece;
+        square.classList.add("has-piece");
+    }
+
     square.addEventListener("click", squareClicked);
 
     return square;
+}
+
+function showPieceMoves(squareName, moves) {
+    clearMoveHighlights();
+
+    const selectedSquare = getSquareElement(squareName);
+
+    if (selectedSquare) {
+        selectedSquare.classList.add("selected-piece");
+    }
+
+    for (const move of moves) {
+        const targetSquare = getSquareElement(move);
+
+        if (!targetSquare) {
+            continue;
+        }
+
+        targetSquare.classList.add("possible-move");
+
+        if (targetSquare.dataset.piece) {
+            targetSquare.classList.add("possible-capture");
+        }
+    }
+}
+
+function clearMoveHighlights() {
+    for (const square of document.querySelectorAll(".selected-piece, .possible-move, .possible-capture")) {
+        square.classList.remove("selected-piece", "possible-move", "possible-capture");
+    }
+}
+
+function getSquareElement(squareName) {
+    return document.querySelector(`.square[data-square="${squareName}"]`);
 }
 
 function renderInaccessibleArrows(board, inaccessibleSquares) {
