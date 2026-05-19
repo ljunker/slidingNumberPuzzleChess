@@ -16,10 +16,22 @@ const adjacentMoves = [
     {direction: "up", fileOffset: 0, rankOffset: 2},
 ];
 
-function renderBoard(fen, inaccessible) {
+let selectedPieceSquare = null;
+let selectedPieceMoves = new Set();
+let gameOver = false;
+
+function renderGame(data) {
+    renderBoard(data.fen.split(" ")[0], data.inaccessible, data.legalSlidingMoves);
+    renderMoveHistory(data.moveHistory || []);
+    updateGameStatus(data);
+}
+
+function renderBoard(fen, inaccessible, legalSlidingMoves = []) {
     const board = document.getElementById("board");
     board.classList.remove("is-moving");
     board.innerHTML = "";
+    selectedPieceSquare = null;
+    selectedPieceMoves = new Set();
 
     const rows = fen.split("/");
 
@@ -51,14 +63,28 @@ function renderBoard(fen, inaccessible) {
         }
     }
 
-    renderInaccessibleArrows(board, inaccessible);
+    renderInaccessibleArrows(board, inaccessible, legalSlidingMoves);
 }
 
 async function squareClicked(event) {
+    if (gameOver) {
+        return;
+    }
+
     const square = event.currentTarget;
     const squareName = square.dataset.square;
 
+    if (selectedPieceSquare && selectedPieceMoves.has(squareName)) {
+        await moveSelectedPiece(squareName);
+        return;
+    }
+
     if (!square.dataset.piece) {
+        clearMoveHighlights();
+        return;
+    }
+
+    if (!isPlayerPiece(square.dataset.piece)) {
         clearMoveHighlights();
         return;
     }
@@ -86,8 +112,44 @@ async function squareClicked(event) {
     }
 }
 
+async function moveSelectedPiece(toSquare) {
+    const board = document.getElementById("board");
+
+    board.classList.add("is-moving");
+
+    try {
+        const response = await fetch("/pieceMove", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                from: selectedPieceSquare,
+                to: toSquare,
+                aiDepth: getAiDepth(),
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Piece move failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        renderGame(data);
+        showLastMove(data.move, "player-last-move");
+        showLastMove(data.aiMove, "ai-last-move");
+    } catch (error) {
+        console.error("Error moving piece:", error);
+        board.classList.remove("is-moving");
+    }
+}
+
 async function arrowClicked(event) {
     event.stopPropagation();
+
+    if (gameOver) {
+        return;
+    }
 
     const arrow = event.currentTarget;
     const board = document.getElementById("board");
@@ -102,6 +164,7 @@ async function arrowClicked(event) {
             },
             body: JSON.stringify({
                 direction: arrow.dataset.direction,
+                aiDepth: getAiDepth(),
             }),
         });
 
@@ -110,7 +173,9 @@ async function arrowClicked(event) {
         }
 
         const data = await response.json();
-        renderBoard(data.fen.split(" ")[0], data.inaccessible);
+        renderGame(data);
+        showLastMove(data.move, "player-last-move");
+        showLastMove(data.aiMove, "ai-last-move");
     } catch (error) {
         console.error("Error performing sliding move:", error);
         board.classList.remove("is-moving");
@@ -142,6 +207,8 @@ function createSquare(rank, file, squareName, piece, inaccessibleSquares) {
 
 function showPieceMoves(squareName, moves) {
     clearMoveHighlights();
+    selectedPieceSquare = squareName;
+    selectedPieceMoves = new Set(moves);
 
     const selectedSquare = getSquareElement(squareName);
 
@@ -165,16 +232,41 @@ function showPieceMoves(squareName, moves) {
 }
 
 function clearMoveHighlights() {
+    selectedPieceSquare = null;
+    selectedPieceMoves = new Set();
+
     for (const square of document.querySelectorAll(".selected-piece, .possible-move, .possible-capture")) {
         square.classList.remove("selected-piece", "possible-move", "possible-capture");
     }
+}
+
+function showLastMove(move, className) {
+    if (!move) {
+        return;
+    }
+
+    const squareNames = move.fromSquares
+        ? [...move.fromSquares, ...move.toSquares]
+        : [move.from, move.to];
+
+    for (const squareName of squareNames) {
+        const square = getSquareElement(squareName);
+
+        if (square) {
+            square.classList.add(className);
+        }
+    }
+}
+
+function isPlayerPiece(piece) {
+    return piece === piece.toUpperCase();
 }
 
 function getSquareElement(squareName) {
     return document.querySelector(`.square[data-square="${squareName}"]`);
 }
 
-function renderInaccessibleArrows(board, inaccessibleSquares) {
+function renderInaccessibleArrows(board, inaccessibleSquares, legalSlidingMoves) {
     const inaccessibleBlock = getInaccessibleBlock(inaccessibleSquares);
 
     if (!inaccessibleBlock) {
@@ -185,6 +277,10 @@ function renderInaccessibleArrows(board, inaccessibleSquares) {
     const targetSquares = getBlockSquares(inaccessibleBlock);
 
     for (const move of adjacentMoves) {
+        if (!legalSlidingMoves.includes(move.direction)) {
+            continue;
+        }
+
         const sourceBlock = {
             file: inaccessibleBlock.file + move.fileOffset,
             rank: inaccessibleBlock.rank + move.rankOffset,
@@ -301,11 +397,78 @@ function initNewGame() {
     fetch("/newGame")
         .then(response => response.json())
         .then(data => {
-            renderBoard(data.fen.split(" ")[0], data.inaccessible);
+            renderGame(data);
         })
         .catch(error => {
             console.error("Error starting new game:", error);
         });
 }
 
+function updateGameStatus(data) {
+    const status = document.getElementById("game-status");
+    gameOver = data.checkmate || data.stalemate;
+
+    if (data.checkmate) {
+        status.textContent = `Schachmatt. ${displayColor(data.winner)} gewinnt.`;
+        status.className = "game-status is-checkmate";
+        return;
+    }
+
+    if (data.stalemate) {
+        status.textContent = "Patt.";
+        status.className = "game-status is-stalemate";
+        return;
+    }
+
+    if (data.check) {
+        status.textContent = `Schach gegen ${displayColor(data.turn)}.`;
+        status.className = "game-status is-check";
+        return;
+    }
+
+    status.textContent = `${displayColor(data.turn)} am Zug.`;
+    status.className = "game-status";
+}
+
+function renderMoveHistory(moveHistory) {
+    const history = document.getElementById("move-history");
+    history.innerHTML = "";
+
+    for (const move of moveHistory) {
+        const item = document.createElement("li");
+        const whiteMove = document.createElement("span");
+        const blackMove = document.createElement("span");
+
+        whiteMove.className = "white-move";
+        blackMove.className = "black-move";
+        whiteMove.textContent = move.white || "";
+        blackMove.textContent = move.black || "";
+
+        item.value = move.number;
+        item.appendChild(whiteMove);
+        item.append(" ");
+        item.appendChild(blackMove);
+        history.appendChild(item);
+    }
+}
+
+function displayColor(value) {
+    return value === "white" ? "Weiss" : "Schwarz";
+}
+
+function initAiDepthControl() {
+    const depthInput = document.getElementById("ai-depth");
+    const depthValue = document.getElementById("ai-depth-value");
+
+    depthInput.addEventListener("input", () => {
+        depthValue.value = depthInput.value;
+        depthValue.textContent = depthInput.value;
+    });
+}
+
+function getAiDepth() {
+    return Number(document.getElementById("ai-depth").value);
+}
+
+initAiDepthControl();
 initNewGame();

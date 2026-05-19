@@ -7,6 +7,104 @@ body {
     background: #222;
 }
 
+.game-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.toolbar {
+    align-items: center;
+    background: #303030;
+    border: 1px solid #484848;
+    display: flex;
+    gap: 18px;
+    justify-content: space-between;
+    padding: 10px 12px;
+}
+
+.ai-depth-control {
+    align-items: center;
+    color: #f3f3f3;
+    display: grid;
+    font-size: 14px;
+    gap: 10px;
+    grid-template-columns: auto 180px 2ch;
+}
+
+.ai-depth-control input {
+    accent-color: #2563eb;
+}
+
+.ai-depth-control output {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.game-status {
+    color: #f3f3f3;
+    font-size: 14px;
+    min-width: 130px;
+    text-align: right;
+}
+
+.game-status.is-check {
+    color: #fde68a;
+}
+
+.game-status.is-checkmate {
+    color: #fecaca;
+    font-weight: 700;
+}
+
+.game-status.is-stalemate {
+    color: #c7d2fe;
+}
+
+.game-layout {
+    align-items: flex-start;
+    display: flex;
+    gap: 16px;
+}
+
+.notation-panel {
+    background: #303030;
+    border: 1px solid #484848;
+    color: #f3f3f3;
+    max-height: 572px;
+    min-width: 210px;
+    overflow: auto;
+    padding: 10px 12px;
+}
+
+.notation-panel h2 {
+    font-size: 14px;
+    font-weight: 650;
+    margin: 0 0 10px;
+}
+
+.move-history {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    margin: 0;
+    padding-left: 28px;
+}
+
+.move-history li {
+    padding-left: 4px;
+}
+
+.move-history li::marker {
+    color: #a3a3a3;
+}
+
+.white-move,
+.black-move {
+    display: inline-block;
+    min-width: 78px;
+}
+
 .board {
     display: grid;
     grid-template-columns: repeat(8, 70px);
@@ -81,6 +179,14 @@ body {
     border: 5px solid rgba(37, 99, 235, 0.85);
     height: 54px;
     width: 54px;
+}
+
+.square.player-last-move {
+    box-shadow: inset 0 0 0 5px rgba(22, 163, 74, 0.65);
+}
+
+.square.ai-last-move {
+    box-shadow: inset 0 0 0 5px rgba(220, 38, 38, 0.58);
 }
 
 .move-arrow {

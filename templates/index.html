@@ -7,7 +7,25 @@
 </head>
 <body>
 
-<div class="board" id="board"></div>
+<main class="game-shell">
+    <div class="toolbar">
+        <label class="ai-depth-control" for="ai-depth">
+            <span>KI Tiefe</span>
+            <input id="ai-depth" max="10" min="2" step="1" type="range" value="2">
+            <output for="ai-depth" id="ai-depth-value">2</output>
+        </label>
+        <div class="game-status" id="game-status"></div>
+    </div>
+
+    <div class="game-layout">
+        <div class="board" id="board"></div>
+
+        <section aria-label="Partienotation" class="notation-panel">
+            <h2>Notation</h2>
+            <ol class="move-history" id="move-history"></ol>
+        </section>
+    </div>
+</main>
 
 <script src="{{ url_for('static', filename='app.js') }}"></script>
 
