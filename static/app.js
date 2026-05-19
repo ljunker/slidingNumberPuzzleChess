@@ -8,6 +8,7 @@ const boardSize = 8;
 const blockSize = 2;
 const squareSize = 70;
 const arrowHitboxSize = 48;
+const arrowTargetCenterGap = 16;
 const adjacentBlockOffsets = [
     [0, -2],
     [-2, 0],
@@ -106,14 +107,22 @@ function renderInaccessibleArrows(board, inaccessibleSquares) {
         const sourceCenter = getBlockCenter(sourceBlock);
         const xDistance = targetCenter.x - sourceCenter.x;
         const yDistance = targetCenter.y - sourceCenter.y;
-        const distance = Math.hypot(xDistance, yDistance) - getBlockEdgeInset(xDistance, yDistance);
+        const centerDistance = Math.hypot(xDistance, yDistance);
+        const sourceEdgeInset = getBlockEdgeInset(xDistance, yDistance);
+        const xUnit = xDistance / centerDistance;
+        const yUnit = yDistance / centerDistance;
+        const startPoint = {
+            x: sourceCenter.x + xUnit * sourceEdgeInset,
+            y: sourceCenter.y + yUnit * sourceEdgeInset,
+        };
+        const distance = centerDistance - sourceEdgeInset - arrowTargetCenterGap;
         const angle = Math.atan2(yDistance, xDistance);
         const arrow = document.createElement("button");
 
         arrow.type = "button";
         arrow.className = "move-arrow";
-        arrow.style.left = `${sourceCenter.x}px`;
-        arrow.style.top = `${sourceCenter.y - arrowHitboxSize / 2}px`;
+        arrow.style.left = `${startPoint.x}px`;
+        arrow.style.top = `${startPoint.y - arrowHitboxSize / 2}px`;
         arrow.style.width = `${distance}px`;
         arrow.style.height = `${arrowHitboxSize}px`;
         arrow.style.transform = `rotate(${angle}rad)`;
