@@ -1,0 +1,53 @@
+body {
+    font-family: system-ui, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #222;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(8, 70px);
+    grid-template-rows: repeat(8, 70px);
+    border: 6px solid #333;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.square {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 46px;
+    user-select: none;
+}
+
+.square.inaccessible {
+    background: #444;
+    opacity: 0.65;
+    position: relative;
+    pointer-events: none;
+}
+
+.square.inaccessible::after {
+    content: "✕";
+    position: absolute;
+    font-size: 32px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.light {
+    background: #f0d9b5;
+}
+
+.dark {
+    background: #b58863;
+}
+
+.piece {
+    cursor: default;
+    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+}
