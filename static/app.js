@@ -453,7 +453,7 @@ function renderMoveHistory(moveHistory) {
 }
 
 function displayColor(value) {
-    return value === "white" ? "Weiss" : "Schwarz";
+    return value === "white" ? "Weiß" : "Schwarz";
 }
 
 function initAiDepthControl() {
