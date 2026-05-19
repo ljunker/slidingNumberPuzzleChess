@@ -1,10 +1,3 @@
-const inaccessibleSquares = new Set([
-    "a1",
-    "b2",
-    "e4",
-    "h8"
-]);
-
 const pieces = {
     p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
     P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
