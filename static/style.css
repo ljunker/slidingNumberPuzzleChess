@@ -13,6 +13,7 @@ body {
     grid-template-rows: repeat(8, 70px);
     border: 6px solid #333;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    position: relative;
 }
 
 .square {
@@ -50,4 +51,54 @@ body {
 .piece {
     cursor: default;
     text-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.move-arrow {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    padding: 0;
+    position: absolute;
+    transform-origin: left center;
+    z-index: 3;
+}
+
+.move-arrow::before {
+    background: rgba(255, 247, 181, 0.88);
+    border-radius: 999px;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.45);
+    content: "";
+    height: 9px;
+    left: 0;
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.move-arrow::after {
+    border-bottom: 15px solid transparent;
+    border-left: 22px solid rgba(255, 247, 181, 0.88);
+    border-top: 15px solid transparent;
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.move-arrow:hover::before,
+.move-arrow:focus-visible::before {
+    background: #ffffff;
+}
+
+.move-arrow:hover::after,
+.move-arrow:focus-visible::after {
+    border-left-color: #ffffff;
+}
+
+.move-arrow:focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 3px;
 }
