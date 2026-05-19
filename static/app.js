@@ -9,15 +9,16 @@ const blockSize = 2;
 const squareSize = 70;
 const arrowHitboxSize = 48;
 const arrowTargetCenterGap = 16;
-const adjacentBlockOffsets = [
-    [0, -2],
-    [-2, 0],
-    [2, 0],
-    [0, 2],
+const adjacentMoves = [
+    {direction: "down", fileOffset: 0, rankOffset: -2},
+    {direction: "right", fileOffset: -2, rankOffset: 0},
+    {direction: "left", fileOffset: 2, rankOffset: 0},
+    {direction: "up", fileOffset: 0, rankOffset: 2},
 ];
 
 function renderBoard(fen, inaccessible) {
     const board = document.getElementById("board");
+    board.classList.remove("is-moving");
     board.innerHTML = "";
 
     const rows = fen.split("/");
@@ -60,11 +61,35 @@ function squareClicked(event) {
     alert("You clicked on square: " + squareName);
 }
 
-function arrowClicked(event) {
+async function arrowClicked(event) {
     event.stopPropagation();
 
     const arrow = event.currentTarget;
-    alert(`Move ${arrow.dataset.fromSquares} to ${arrow.dataset.toSquares}`);
+    const board = document.getElementById("board");
+
+    board.classList.add("is-moving");
+
+    try {
+        const response = await fetch("/slidingMove", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                direction: arrow.dataset.direction,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Sliding move failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        renderBoard(data.fen.split(" ")[0], data.inaccessible);
+    } catch (error) {
+        console.error("Error performing sliding move:", error);
+        board.classList.remove("is-moving");
+    }
 }
 
 function createSquare(rank, file, squareName, piece, inaccessibleSquares) {
@@ -94,10 +119,10 @@ function renderInaccessibleArrows(board, inaccessibleSquares) {
     const targetCenter = getBlockCenter(inaccessibleBlock);
     const targetSquares = getBlockSquares(inaccessibleBlock);
 
-    for (const [fileOffset, rankOffset] of adjacentBlockOffsets) {
+    for (const move of adjacentMoves) {
         const sourceBlock = {
-            file: inaccessibleBlock.file + fileOffset,
-            rank: inaccessibleBlock.rank + rankOffset,
+            file: inaccessibleBlock.file + move.fileOffset,
+            rank: inaccessibleBlock.rank + move.rankOffset,
         };
 
         if (!isBlockOnBoard(sourceBlock)) {
@@ -126,11 +151,12 @@ function renderInaccessibleArrows(board, inaccessibleSquares) {
         arrow.style.width = `${distance}px`;
         arrow.style.height = `${arrowHitboxSize}px`;
         arrow.style.transform = `rotate(${angle}rad)`;
+        arrow.dataset.direction = move.direction;
         arrow.dataset.fromSquares = getBlockSquares(sourceBlock).join(",");
         arrow.dataset.toSquares = targetSquares.join(",");
         arrow.setAttribute(
             "aria-label",
-            `Move ${arrow.dataset.fromSquares} to ${arrow.dataset.toSquares}`
+            `Move ${arrow.dataset.fromSquares} ${move.direction} to ${arrow.dataset.toSquares}`
         );
         arrow.addEventListener("click", arrowClicked);
 

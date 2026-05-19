@@ -102,3 +102,8 @@ body {
     outline: 3px solid #2563eb;
     outline-offset: 3px;
 }
+
+.board.is-moving .move-arrow {
+    opacity: 0.55;
+    pointer-events: none;
+}
