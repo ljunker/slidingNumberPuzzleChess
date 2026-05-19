@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Chess Board</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #222;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 70px);
+            grid-template-rows: repeat(8, 70px);
+            border: 6px solid #333;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .square {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 46px;
+            user-select: none;
+        }
+
+        .square.inaccessible {
+            background: #444;
+            opacity: 0.65;
+            position: relative;
+            pointer-events: none;
+        }
+
+        .square.inaccessible::after {
+            content: "✕";
+            position: absolute;
+            font-size: 32px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .light {
+            background: #f0d9b5;
+        }
+
+        .dark {
+            background: #b58863;
+        }
+
+        .piece {
+            cursor: default;
+            text-shadow: 0 2px 3px rgba(0, 0, 0, 0.25);
+        }
+    </style>
+</head>
+<body>
+
+<div class="board" id="board"></div>
+
+<script>
+    const inaccessibleSquares = new Set([
+        "a1",
+        "b2",
+        "e4",
+        "h8"
+    ]);
+
+    function isAccessible(square, piece) {
+        // Your own logic goes here.
+        // square is like "e4"
+        // piece is like "P", "k", or null
+
+        return !inaccessibleSquares.has(square);
+    }
+
+    const pieces = {
+        p: "♟", r: "♜", n: "♞", b: "♝", q: "♛", k: "♚",
+        P: "♙", R: "♖", N: "♘", B: "♗", Q: "♕", K: "♔"
+    };
+
+    const startPosition =
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+
+    function renderBoard(fen) {
+        const board = document.getElementById("board");
+        board.innerHTML = "";
+
+        const rows = fen.split("/");
+        const files = "abcdefgh";
+
+        for (let rank = 0; rank < 8; rank++) {
+            let file = 0;
+
+            for (const char of rows[rank]) {
+                if (/\d/.test(char)) {
+                    const emptyCount = Number(char);
+
+                    for (let i = 0; i < emptyCount; i++) {
+                        const squareName = `${files[file]}${8 - rank}`;
+                        const square = createSquare(rank, file, squareName, null);
+                        board.appendChild(square);
+                        file++;
+                    }
+                } else {
+                    const squareName = `${files[file]}${8 - rank}`;
+                    const square = createSquare(rank, file, squareName, char);
+
+                    const piece = document.createElement("span");
+                    piece.className = "piece";
+                    piece.textContent = pieces[char];
+                    square.appendChild(piece);
+
+                    board.appendChild(square);
+                    file++;
+                }
+            }
+        }
+    }
+
+    function createSquare(rank, file, squareName, piece) {
+        const square = document.createElement("div");
+        const isLight = (rank + file) % 2 === 0;
+        const accessible = isAccessible(squareName, piece);
+
+        square.className = `square ${isLight ? "light" : "dark"}`;
+
+        if (!accessible) {
+            square.classList.add("inaccessible");
+        }
+
+        square.dataset.square = squareName;
+
+        return square;
+    }
+
+    renderBoard(startPosition);
+</script>
+
+</body>
+</html>
